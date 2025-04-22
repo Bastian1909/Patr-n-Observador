@@ -1,0 +1,56 @@
+import java.awt.event.*;
+import java.sql.*;
+import java.util.*;
+import javax.swing.*;
+
+public class OrdenarPrioridad implements ActionListener {
+    private JTextField[] campos;
+
+    public OrdenarPrioridad(JTextField[] campos) {
+        this.campos = campos;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent evento) {
+        List<Tarea> listaTareas = new ArrayList<>();
+
+        try (Connection conexion = ConexionSQLite.conectar()) {
+            String sql = "SELECT * FROM Tarea";
+            try (PreparedStatement stmt = conexion.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+                    listaTareas.add(new Tarea(
+                        rs.getString("NombreTarea"),
+                        rs.getInt("Prioridad"),
+                        rs.getInt("Fecha"),
+                        rs.getString("Status")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al obtener tareas: " + e.getMessage());
+            return;
+        }
+
+        if (listaTareas.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay tareas para ordenar.");
+            return;
+        }
+
+        listaTareas.sort(Comparator.comparingInt(Tarea::getPrioridad));
+
+        StringBuilder resultado = new StringBuilder();
+        for (Tarea t : listaTareas) {
+            resultado.append(t.toString());
+        }
+
+        JTextArea areaTexto = new JTextArea(resultado.toString());
+        areaTexto.setEditable(false);
+        JScrollPane scroll = new JScrollPane(areaTexto);
+        scroll.setPreferredSize(new java.awt.Dimension(400, 300));
+        JOptionPane.showMessageDialog(null, scroll, "Tareas ordenadas por prioridad", JOptionPane.INFORMATION_MESSAGE);
+    }
+}
+
+
